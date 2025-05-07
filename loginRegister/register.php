@@ -2,6 +2,11 @@
 session_start();
 require_once '../connections/config.php'; // Include the database connection file
 
+// Allow cross-origin requests (for testing with Postman or other frontend apps)
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type");
+
 header('Content-Type: application/json');
 
 // Get the raw POST data from the body
