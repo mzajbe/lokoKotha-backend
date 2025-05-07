@@ -2,7 +2,7 @@
 $servername = "localhost"; // Database server (usually localhost)
 $username = "root"; // Database username
 $password = ""; // Database password (change it if you have set one)
-$dbname = "cultureF"; // Your database name
+$dbname = "culturef"; // Your database name
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

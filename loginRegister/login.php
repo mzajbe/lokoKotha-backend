@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 require_once '../connections/config.php'; // Include the database connection file
@@ -29,12 +30,12 @@ if (isset($data['email']) && isset($data['password'])) {
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
 
-                // Return redirect URL based on role (admin or user)
-                if ($user['role'] == 'admin') {
-                    echo json_encode(["status" => "success", "redirect" => "admin_dashboard.php"]);
-                } else {
-                    echo json_encode(["status" => "success", "redirect" => "user_dashboard.php"]);
-                }
+                // Return success response with session token (PHPSESSID)
+                echo json_encode([
+                    "status" => "success", 
+                    "message" => "Login successful",
+                    "session_token" => session_id()  // This is the session token (PHP's session ID)
+                ]);
             } else {
                 echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
             }
