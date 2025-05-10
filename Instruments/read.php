@@ -1,49 +1,73 @@
-<?php
+<!-- http://localhost/lokoKotha-backend/Instruments/read.php -->
 
-// Include database connection
+<!-- 
+{
+    "success": true,
+    "data": [
+        {
+            "id": 34,
+            "user_id": 10,
+            "instrument_name": "Ektara",
+            "description": "A one-string folk instrument used in Baul songs.",
+            "image_url": "https://example.com/images/ektara.jpg",
+            "type": "Musical Instrument",
+            "era": "18th Century",
+            "region": "Kushtia",
+            "status": "pending",
+            "created_at": "2025-05-10 05:32:04"
+        }
+    ]
+} -->
+
+
+
+<?php
+// Headers
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json");
+
+// DB connection
 include '../connections/Connection.php';
 
-// Enable CORS if needed
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET");
-header("Access-Control-Allow-Headers: Content-Type");
+// Only allow GET request
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $sql = "SELECT * FROM heritage_instruments ORDER BY created_at DESC";
+    $result = mysqli_query($conn, $sql);
 
-// Always return JSON
-header('Content-Type: application/json');
+    if ($result && mysqli_num_rows($result) > 0) {
+        $instruments = [];
 
-// Only allow GET method
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Invalid request method. Only GET is allowed.'
-    ]);
-    exit;
-}
+        while ($row = mysqli_fetch_assoc($result)) {
+            $instruments[] = [
+                "id" => (int) $row['id'],
+                "user_id" => (int) $row['user_id'],
+                "instrument_name" => $row['instrument_name'],
+                "description" => $row['description'],
+                "image_url" => $row['image_url'],
+                "type" => $row['type'],
+                "era" => $row['era'],
+                "region" => $row['region'],
+                "status" => $row['status'],
+                "created_at" => $row['created_at']
+            ];
+        }
 
-// Fetch data from heritage_instruments table
-$sql = "SELECT id, user_id, instrument_name, description, image_url, created_at FROM heritage_instruments";
-$result = mysqli_query($conn, $sql);
-
-// Prepare the response
-if ($result && mysqli_num_rows($result) > 0) {
-    $instruments = [];
-
-    while ($row = mysqli_fetch_assoc($result)) {
-        $instruments[] = $row;
+        echo json_encode([
+            "success" => true,
+            "data" => $instruments
+        ]);
+    } else {
+        echo json_encode([
+            "success" => true,
+            "data" => []
+        ]);
     }
-
-    echo json_encode([
-        'status' => 'success',
-        'data' => $instruments
-    ]);
 } else {
     echo json_encode([
-        'status' => 'success',
-        'data' => [],
-        'message' => 'No instruments found.'
+        "success" => false,
+        "message" => "Invalid request method"
     ]);
 }
 
-// Close connection
 mysqli_close($conn);
 ?>

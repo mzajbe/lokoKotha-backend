@@ -1,88 +1,69 @@
-<?php
+<!-- {
+  "instrument_name": "Updated Ektara",
+  "description": "Updated description",
+  "status": "approved"
+} -->
 
-// Include database connection
+
+<!-- http://localhost/lokoKotha-backend/Instruments/update.php?id=35 -->
+
+
+
+
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json");
+
 include '../connections/Connection.php';
 
-// Enable CORS if needed
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type");
+// Check if method is POST and ID is provided
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['id'])) {
+    $id = intval($_GET['id']);
+    $data = json_decode(file_get_contents("php://input"), true);
 
-// Return JSON response always
-header('Content-Type: application/json');
+    if ($id <= 0) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Invalid ID"
+        ]);
+        exit;
+    }
 
-// Only accept POST method
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Invalid request method.'
-    ]);
-    exit;
-}
+    // Build update fields
+    $fields = [];
+    if (isset($data['instrument_name'])) $fields[] = "instrument_name = '" . mysqli_real_escape_string($conn, $data['instrument_name']) . "'";
+    if (isset($data['description']))     $fields[] = "description = '" . mysqli_real_escape_string($conn, $data['description']) . "'";
+    if (isset($data['image_url']))       $fields[] = "image_url = '" . mysqli_real_escape_string($conn, $data['image_url']) . "'";
+    if (isset($data['type']))            $fields[] = "type = '" . mysqli_real_escape_string($conn, $data['type']) . "'";
+    if (isset($data['era']))             $fields[] = "era = '" . mysqli_real_escape_string($conn, $data['era']) . "'";
+    if (isset($data['region']))          $fields[] = "region = '" . mysqli_real_escape_string($conn, $data['region']) . "'";
+    if (isset($data['status']))          $fields[] = "status = '" . mysqli_real_escape_string($conn, $data['status']) . "'";
 
-// Read input as JSON
-$input = json_decode(file_get_contents('php://input'), true);
+    if (empty($fields)) {
+        echo json_encode([
+            "success" => false,
+            "message" => "No fields to update"
+        ]);
+        exit;
+    }
 
-// Validate input fields
-if (
-    empty($input['id']) || empty($input['user_id']) ||
-    empty($input['instrument_name']) || empty($input['description']) ||
-    empty($input['image_url'])
-) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Missing required fields.'
-    ]);
-    exit;
-}
-
-// Collect and sanitize
-$id = intval($input['id']);
-$user_id = intval($input['user_id']);
-$instrument_name = mysqli_real_escape_string($conn, $input['instrument_name']);
-$description = mysqli_real_escape_string($conn, $input['description']);
-$image_url = mysqli_real_escape_string($conn, $input['image_url']);
-
-// Check if instrument exists
-$instrument_check = mysqli_query($conn, "SELECT * FROM heritage_instruments WHERE id = $id");
-if (mysqli_num_rows($instrument_check) === 0) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Instrument ID does not exist.'
-    ]);
-    exit;
-}
-
-// Check if user exists
-$user_check = mysqli_query($conn, "SELECT user_id FROM users WHERE user_id = $user_id");
-if (mysqli_num_rows($user_check) === 0) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'User ID does not exist.'
-    ]);
-    exit;
-}
-
-// Update the instrument
-$sql = "UPDATE heritage_instruments
-        SET user_id = $user_id,
-            instrument_name = '$instrument_name',
-            description = '$description',
-            image_url = '$image_url'
-        WHERE id = $id";
-
-if (mysqli_query($conn, $sql)) {
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Instrument updated successfully.'
-    ]);
+    $sql = "UPDATE heritage_instruments SET " . implode(", ", $fields) . " WHERE id = $id";
+    if (mysqli_query($conn, $sql)) {
+        echo json_encode([
+            "success" => true,
+            "message" => "Instrument updated successfully"
+        ]);
+    } else {
+        echo json_encode([
+            "success" => false,
+            "message" => "Update failed: " . mysqli_error($conn)
+        ]);
+    }
 } else {
     echo json_encode([
-        'status' => 'error',
-        'message' => 'Failed to update instrument: ' . mysqli_error($conn)
+        "success" => false,
+        "message" => "Invalid request method or missing ID"
     ]);
 }
 
-// Close database connection
 mysqli_close($conn);
-?>

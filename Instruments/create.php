@@ -1,84 +1,70 @@
+
+<!-- {
+  "user_id": 10,
+  "instrument_name": "Ektara",
+  "image_url": "https://example.com/images/ektara.jpg",
+  "description": "A one-string folk instrument used in Baul songs.",
+  "type": "Musical Instrument",
+  "era": "18th Century",
+  "region": "Kushtia"
+} -->
+
+<!-- http://localhost/lokoKotha-backend/Instruments/create.php -->
+
+
+
 <?php
-// database connection settings
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json");
+
 include '../connections/Connection.php';
 
-// Allow cross-origin requests (for testing with Postman or other frontend apps)
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type");
-
-// Check if the request method is POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Collect data safely from POST request
     $data = json_decode(file_get_contents("php://input"), true);
-    
-    $user_id = isset($data['user_id']) ? intval($data['user_id']) : 0;
-    $instrument_name = isset($data['instrument_name']) ? mysqli_real_escape_string($conn, $data['instrument_name']) : '';
-    $description = isset($data['description']) ? mysqli_real_escape_string($conn, $data['description']) : '';
-    $image_url = isset($data['image_url']) ? mysqli_real_escape_string($conn, $data['image_url']) : '';
 
-    // Validate required fields
-    if ($user_id > 0 && !empty($instrument_name) && !empty($description) && !empty($image_url)) {
-        // Check if the user_id exists in the users table
-        $user_check = mysqli_query($conn, "SELECT user_id FROM users WHERE user_id = $user_id");
-        if (mysqli_num_rows($user_check) > 0) {
-            $created_at = date('Y-m-d H:i:s');
+    $user_id = intval($data['user_id'] ?? 0);
+    $instrument_name = mysqli_real_escape_string($conn, $data['instrument_name'] ?? '');
+    $description = mysqli_real_escape_string($conn, $data['description'] ?? '');
+    $image_url = mysqli_real_escape_string($conn, $data['image_url'] ?? '');
+    $type = mysqli_real_escape_string($conn, $data['type'] ?? '');
+    $era = mysqli_real_escape_string($conn, $data['era'] ?? '');
+    $region = mysqli_real_escape_string($conn, $data['region'] ?? '');
+    $status = 'pending'; // Default status
+    $created_at = date('Y-m-d H:i:s');
 
-            // Insert data into the heritage_instruments table
-            $sql = "INSERT INTO heritage_instruments (user_id, instrument_name, description, image_url, created_at)
-                    VALUES ($user_id, '$instrument_name', '$description', '$image_url', '$created_at')";
+    if ($user_id && $instrument_name && $description && $image_url && $type && $era && $region) {
+        $sql = "INSERT INTO heritage_instruments 
+            (user_id, instrument_name, description, image_url, type, era, region, status, created_at)
+            VALUES 
+            ($user_id, '$instrument_name', '$description', '$image_url', '$type', '$era', '$region', '$status', '$created_at')";
 
-            if (mysqli_query($conn, $sql)) {
-                $response = [
-                    'status' => 'success',
-                    'message' => 'Instrument created successfully.',
-                    'instrument_id' => mysqli_insert_id($conn), // Return the inserted instrument ID
-                ];
+        if (mysqli_query($conn, $sql)) {
+            $inserted_id = mysqli_insert_id($conn);
 
-                // Send success response with HTTP 201 status
-                http_response_code(201);
-            } else {
-                $response = [
-                    'status' => 'error',
-                    'message' => 'Failed to create instrument: ' . mysqli_error($conn)
-                ];
-
-                // Send error response with HTTP 500 status
-                http_response_code(500);
-            }
+            echo json_encode([
+                "success" => true,
+                "message" => "Heritage instrument submitted successfully",
+                "data" => [
+                    "id" => $inserted_id,
+                    "instrument_name" => $instrument_name,
+                    "image_url" => $image_url,
+                    "description" => $description,
+                    "type" => $type,
+                    "era" => $era,
+                    "region" => $region,
+                    "status" => $status,
+                    "created_at" => $created_at
+                ]
+            ]);
         } else {
-            $response = [
-                'status' => 'error',
-                'message' => 'User ID does not exist.'
-            ];
-
-            // Send error response with HTTP 400 status
-            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Database error: " . mysqli_error($conn)]);
         }
     } else {
-        $response = [
-            'status' => 'error',
-            'message' => 'Missing required fields.'
-        ];
-
-        // Send error response with HTTP 400 status
-        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Missing or invalid input fields."]);
     }
 } else {
-    // Invalid request method, only POST allowed
-    $response = [
-        'status' => 'error',
-        'message' => 'Invalid request method.'
-    ];
-
-    // Send error response with HTTP 405 status
-    http_response_code(405);
+    echo json_encode(["success" => false, "message" => "Invalid request method."]);
 }
 
-// Set header to application/json and send response
-header('Content-Type: application/json');
-echo json_encode($response);
-
-// Close connection
 mysqli_close($conn);
 ?>
